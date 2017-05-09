@@ -1,0 +1,37 @@
+/neral_net_static
+neural_net.c
+	
+	Static Xor implementation using a bacpropagation neural network.
+	>> make
+	>>./main (it will provides the Xor output)
+
+--------------------------------------------------------------------------------
+
+/SDL
+pixel_operation.c (basic operations on SDL image)
+text_detection.c 
+
+	Folder containing operations on image.
+		• To test the binarize function
+		>> make
+		>> ./main 1 path/to/image
+		• To test the text detetction
+		>>make
+		>>./main 2 path/to/image.bmp (returns "file.bmp")
+
+	Remarks : argv[1] is the ID to the function you wish to call. 
+	- 1 for image_binarize(char *file_name)
+	- 2 for text_detection(char *file_name)
+			  argv[2] is the path to your image
+	For the last one, the image must be in bmp format.
+
+
+--------------------------------------------------------------------------------
+
+/neural_net_dynamic
+backprop.c
+
+	contains the first draw of neural net dynamic
+	NOW WORKIIIING !!!! :D (at least for a xor )	
+	>> make
+	>> ./main 

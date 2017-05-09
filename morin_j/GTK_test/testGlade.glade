@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.20.0 -->
+<interface>
+  <requires lib="gtk+" version="3.20"/>
+  <object class="GtkWindow" id="mywindow">
+    <property name="width_request">600</property>
+    <property name="height_request">800</property>
+    <property name="can_focus">False</property>
+    <property name="hexpand">False</property>
+    <property name="vexpand">False</property>
+    <property name="resizable">False</property>
+    <property name="gravity">north</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="halign">start</property>
+        <property name="valign">start</property>
+        <property name="orientation">vertical</property>
+        <property name="baseline_position">top</property>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="width_request">600</property>
+            <property name="height_request">380</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkViewport">
+                <property name="width_request">600</property>
+                <property name="height_request">380</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="halign">start</property>
+                <property name="valign">start</property>
+                <property name="shadow_type">none</property>
+                <child>
+                  <object class="GtkImage" id="image_label">
+                    <property name="name">image_label</property>
+                    <property name="width_request">600</property>
+                    <property name="height_request">380</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="valign">start</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="stock">gtk-missing-image</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkFixed">
+            <property name="width_request">40</property>
+            <property name="height_request">40</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkButton" id="Run">
+                <property name="label">gtk-execute</property>
+                <property name="width_request">100</property>
+                <property name="height_request">40</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="run_code" swapped="no"/>
+              </object>
+              <packing>
+                <property name="x">250</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="Save">
+                <property name="label">gtk-save</property>
+                <property name="width_request">100</property>
+                <property name="height_request">40</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="halign">end</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="save_new_file" swapped="no"/>
+              </object>
+              <packing>
+                <property name="x">500</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkFileChooserButton" id="file_finder">
+                <property name="width_request">100</property>
+                <property name="height_request">40</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="halign">start</property>
+                <property name="title" translatable="yes"/>
+                <signal name="button-press-event" handler="clean_text" swapped="no"/>
+                <signal name="event" handler="clean_text" swapped="no"/>
+                <signal name="file-set" handler="open_image" swapped="no"/>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="text">
+            <property name="name">text</property>
+            <property name="width_request">600</property>
+            <property name="height_request">380</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+            <property name="justify">center</property>
+            <property name="wrap">True</property>
+            <property name="selectable">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <child>
+      <placeholder/>
+    </child>
+  </object>
+</interface>

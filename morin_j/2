@@ -1,0 +1,326 @@
+/*________________________________________*
+  |	
+  |	* File Name     : main.c
+  |	* Creation Date : 24-10-2016
+  |  * Last Modified : Dim  4 déc 22:34:07 2016
+  |	* Created by    :	    Claire
+ *________________________________________**/
+
+# include <stdio.h>
+# include <stdlib.h>
+# include <math.h>
+# include <string.h>
+# include <unistd.h>
+# include <gtk/gtk.h>
+
+# include "backprop.h"
+# include "image_to_net.h"
+# include "pixel_operations.h"
+# include "text_detection.h"
+
+
+void 		bpnn_init_training(BPNN *net, char *netname, int epochs, int nb_train, 
+		double **inputs_vect_list, double **target_list) 
+{
+
+	int 	index;
+	double 	sumerr;
+	double 	hid_err;
+	double 	out_err;
+	double 	**outputs_vect_list;
+
+	//	list_errors = 0;
+	sumerr 		= 1.0;
+	outputs_vect_list = malloc(nb_train * sizeof(double *));
+
+	for (int i = 0; i < nb_train; i++)
+		outputs_vect_list[i] = malloc (62 * sizeof(double));
+
+	for (int epoch = 1; epoch <= epochs && sumerr > 0.000002; epoch++)
+	{
+		index = (int)rand() % (nb_train);
+
+		net->inputs_vect = inputs_vect_list[index];
+		net->target = target_list[index];
+		if (net->inputs_vect == NULL || net->target == NULL )
+			puts("NULL values morron");
+		bpnn_train(net, 0.01, 0.1, &out_err, &hid_err);
+		sumerr = (out_err + hid_err);
+		for (int oi = 0; oi < 62; oi++)
+			outputs_vect_list[index][oi] = net->outputs_vect[oi];
+
+		if(epoch % 100000 == 0)
+		{
+			bpnn_save(net, netname);
+			printf("error = %f\n", sumerr);
+		}
+
+	}
+	bpnn_save(net, netname);
+
+
+	printf("Final List :\n");
+	for (int i = 0; i < nb_train; i++)
+	{
+		for (int k = 0; k < 28 * 28; k++)
+		{
+			if (k % 28 == 0)
+				printf("\n");
+
+			if ((int) inputs_vect_list[i][k])
+				printf("%d ", (int) inputs_vect_list[i][k]);
+			else
+				printf("  ");
+
+		}
+		puts("Target vectors");
+		for(int l = 0; l < 62; l++)
+		{
+			printf("%f |", target_list[i][l]);
+		}
+		puts(" ");
+		printf(" corresponding to char \t %c\n ", target_to_char(target_list[i]));
+
+		puts("Outputs vectors");
+		for(int j = 0; j < 62; j++)
+		{
+			printf("%f |", outputs_vect_list[i][j]);
+		}
+		puts(" ");
+		printf(" corresponding to char \t %c\n ", target_to_char(outputs_vect_list[i]));
+	}
+}
+
+char			*choice_train_reco( char **params)
+{
+	puts("First argument is mode : reco - train.");
+	puts("2nd is the name of the bpnn to create/load.");
+	puts("3nd is the number of epochs.");
+
+	BPNN 		*net 	= malloc (1 * sizeof(BPNN));
+	char 		*netname;
+	char 		*mode 	= strdup(params[0]);
+	char		 *path	= NULL;
+	if(strcmp(mode,"reco")==0)
+			path 	= strdup(params[1]);
+
+	netname = strdup("A-Za-z2.bpnn");
+
+	printf("%s net is created in %s mode\n", netname, mode);
+
+	if (mode && strcmp(mode, "reco") == 0)
+	{
+		net 	= bpnn_read(netname);
+		puts("net loaded");
+
+	}
+	else if (mode && strcmp(mode, "train") == 0)
+	{
+		if ( (access(netname, F_OK)) != -1 )
+		{
+			net = bpnn_read(netname);
+			puts("net loaded for training");
+		}
+		else
+		{
+			net = bpnn_create(28 * 28, 15, 62);
+			puts("net created");
+		}
+	}
+	else
+	{
+		puts("MAIN : error null bpnn");
+		return NULL;
+	}
+
+
+	/*================================BGTK=================================*/
+
+	/*==========================IMAGE PROCESSING===========================*/
+
+	/*	img_name = strdup(argv[1]);
+		printf("Binarizing image\n");
+		img 	 = image_binarize(img_name);
+		printf("Done.\n"); */
+
+	/*========================INITIALIZATION================================*/
+
+	int 		epochs;
+	int 		k;
+	int		nb_train;
+	double 		**training_list;
+	double 		**targets_vector_list;
+	SDL_Surface *img;
+
+	epochs 			= 0;
+	nb_train 		= /*26 * 2 * 8;*/ (5188 + 4816);
+	k			= 0;
+	training_list 		= malloc ((nb_train + 1) * sizeof(double *));
+	for (int i = 0; i <= nb_train; i++)
+	{
+		training_list[i] = malloc ((1 + 28 * 28) * sizeof(double)); 
+	}
+	targets_vector_list 	= malloc ((nb_train + 1) * sizeof(double *));
+	for (int i = 0; i <= nb_train; i++)
+	{
+		targets_vector_list[i] = calloc(62, sizeof(double));
+	}
+
+
+	/*=============================TRAINING=============================== */
+
+	if (net && strcmp(mode, "train") == 0)
+	{
+		puts("loading and processing images");
+		char *lup;
+		lup = strdup("upper");
+
+		for (char c = 'A'; c <= 'z'; c++)
+		{
+			if ((int)c == 91) //Passe de Z à a
+			{
+				c = 'a';
+				lup = strdup("lower"); //On change le chemin d'accès
+			}
+
+			for (int i = 0; i < 200 ; i++) //200
+			{
+				char *img_name = malloc(100 * sizeof(char));
+				sprintf(img_name, "/home/helme__c/.ssh/GitRep/morin_j/training/%s/%c/%d.bmp", lup, c, i);
+				if (strcmp(lup, "lower") == 0)
+					sprintf(img_name, "/home/helme__c/.ssh/GitRep/morin_j/training/%s/%c/%d.bmp", lup, c - 32, i);
+
+				if( access( img_name, F_OK  ) != -1  )
+				{
+					img = image_binarize(img_name);
+					build_training_list(img, training_list[k]);
+					build_target_list(c, targets_vector_list[k]);
+					k++;
+				}
+				free(img_name);
+			}
+		}
+		printf("%d\n", k);
+		epochs = char_to_int(params[2]);
+		printf("Done.\nStarting taining with %d image_vect\n", nb_train);
+
+		bpnn_init_training(net, netname, epochs, nb_train, training_list, targets_vector_list);
+
+		printf("Training done\n");
+
+		return NULL;
+	}
+
+	/*===========================RECOGNITION===============================*/
+
+	struct queue *queue = malloc (1 * sizeof(struct queue));
+	queue_init(queue);
+
+	if (net && strcmp(mode, "reco") == 0)
+	{
+		puts("loading and processing images");
+
+		char *img_name = strdup(path);
+
+
+
+		if( access( img_name, F_OK  ) != -1  )
+		{
+			text_detection(img_name, queue);
+			while (queue)
+			{
+				img = image_binarize(queue->store->data);
+				build_training_list(img, training_list[k]);
+				k++;
+				queue->store = queue->store->next;
+			}
+		}
+		free(img_name);
+	}
+
+	printf("%d\n", k);
+
+	puts("Done");
+	puts("Starting recognition");
+
+	nb_train = k;
+
+	char *result = malloc(nb_train * sizeof(char));
+
+	double 	**outputs_vect_list;
+
+	outputs_vect_list = malloc(nb_train * sizeof(double *));
+
+	for (int i = 0; i <= nb_train; i++)
+		outputs_vect_list[i] = malloc (62 * sizeof(double));
+
+
+	for (int i = 0; i < nb_train; i++)
+	{
+		net->inputs_vect = training_list[i];
+		net->target = calloc(62, sizeof(double));
+		if (net->inputs_vect == NULL || net->target == NULL )
+			puts("NULL values morron");
+		bpnn_feedforward(net);
+		for (int oi = 0; oi < 62; oi++)
+			outputs_vect_list[i][oi] = net->outputs_vect[oi];
+
+	}
+
+	printf("Final List :\n");
+	for (int i = 0; i < nb_train; i++)
+	{
+		/*for (int k = 0; k < 28 * 28; k++)
+		  {
+		  if (k % 28 == 0)
+		  printf("\n");
+
+		  if ((int) training_list[i][k])
+		  printf("%d ", (int) training_list[i][k]);
+		  else
+		  printf("  ");
+		  }
+
+		  puts("Outputs vectors");
+		  for(int j = 0; j < 62; j++)
+		  {
+		  printf("%f |", outputs_vect_list[i][j]);
+		  }
+		  puts(" ");*/
+		printf("%c ", target_to_char(outputs_vect_list[i]));
+		result[i] = target_to_char(outputs_vect_list[i]);
+	}
+	puts("Done");
+
+	bpnn_free(net);
+	return result;
+}
+
+
+/*	for (int f = 0; f <= nb_train; f++)
+	free(outputs_vect_list[f]);
+	free(outputs_vect_list);
+
+	for (int i = 0; i <= nb_train; i++)
+	free(training_list[i]);
+	free(training_list);
+
+	for (int i = 0; i <= nb_train; i++)
+	free(targets_vector_list[i]);
+	free(targets_vector_list); */
+
+
+
+int				main(int argc, char **argv)
+{
+	if (argc != 2)
+		return 1; 
+	if(strcmp(argv[0], "train")==0)
+		choice_train_reco(argv);
+	//if(strcmp(argc[0], "gtk")==0)
+		
+	else
+		return 0;
+return 0;
+
+}

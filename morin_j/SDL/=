@@ -1,0 +1,266 @@
+/* Text's area recognition inside images */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "text_detection.h"
+#include "pixel_operations.h"
+
+		
+
+void FindText(SDL_Surface *surface, SDL_Surface *image)
+{
+  Uint32 pixel, pixel2;
+  Uint8 r, g, b, r2, g2, b2;
+  int xpos, ypos, x, xtemp, ytemp;
+  for(int y = 0; y < surface->h; ++y)
+  {
+    x = 0;
+
+    pixel = getpixel(surface, x, y);
+    SDL_GetRGB(pixel, surface->format, &r, &g, &b);
+    
+    if(r == 0 && g == 0 && b == 0)
+    {
+      y = y - 1;
+      xpos = x;
+      ypos = y;
+        
+      while(ypos < surface->h && getpixel(surface, xpos, ypos + 1) == pixel)
+      {
+        ++ypos;
+      }
+      ++ypos;
+
+      while(x < surface->w)
+      {
+        ytemp = ypos;
+        pixel2 = getpixel(image, x, y);
+        SDL_GetRGB(pixel2, image->format, &r2, &g2, &b2);
+        while(r2 != 0 && g2 != 0 && b2 != 0 && ytemp = ypos)
+        {
+          ytemp = 0;
+          while(ytemp < surface->h && getpixel(image, x, ytemp) == pixel2)
+          {
+            ++ytemp;
+          }
+          ++x;
+          pixel2 = getpixel(image, x, y);
+          SDL_GetRGB(pixel2, image->format, &r2, &g2, &b2);
+        }
+        --x;
+        r = 0;
+        g = 255;
+        b = 255;
+        pixel2 = SDL_MapRGB(surface->format, r, g, b);
+        for(int i = y; i < ypos + 1; ++i)
+        {
+          putpixel(image, x, i, pixel2);
+        }
+        ++x;
+      }
+
+      r = 0;
+      g = 255;
+      b = 255;
+      pixel = SDL_MapRGB(surface->format, r, g, b);
+      for(int i = x; i < xpos; ++i)
+      {
+        putpixel(image, i, ymin, pixel);
+        putpixel(image, i, ymax, pixel);
+      }
+      for(int j = ymin; j < ymax; ++j)
+      {
+        putpixel(image, x, j, pixel);
+        putpixel(image, xpos, j, pixel);
+      }
+    }
+  }
+}
+
+SDL_Surface* Xtraversal(SDL_Surface *surface, int width, int height, int offset)
+{
+  SDL_LockSurface(surface);
+  Uint32 pixel_j;
+  Uint32 pixel;
+  Uint8 r,g,b;
+
+  for(int y = 0; y < height; ++y)
+  {
+    for(int x = 0; x < width; ++x)
+    {
+      pixel = getpixel(surface, x, y);
+      SDL_GetRGB(pixel, surface->format, &r, &g, &b);
+      if (r > 0 && g > 0 && b > 0)
+      {
+        int j = x;
+        pixel_j = getpixel(surface, j, y);
+        while(r > 0 && g > 0 && b > 0 && j < width)
+        {
+          pixel_j = getpixel(surface, j, y);
+          SDL_GetRGB(pixel_j, surface->format, &r, &g, &b);
+          ++j;
+        }
+        r = 0;
+        g = 0;
+        b = 0;
+        pixel = SDL_MapRGB(surface->format, r, g, b);
+        if(j - x < offset && j < width - 1)
+        {
+          while(x < j && x < width - 1)
+          {
+            putpixel(surface, x, y, pixel);
+            ++x;
+          }
+          if(j < width - 1)
+          {
+            putpixel(surface, j, y, pixel);
+          }
+        }
+      }
+    }
+  }
+  SDL_UnlockSurface(surface);
+  return surface;
+}
+
+
+SDL_Surface* Ytraversal(SDL_Surface *surface, int width, int height, int offset)
+{
+  SDL_LockSurface(surface);
+  Uint32 pixel_j;
+  Uint32 pixel;
+  Uint8 r, g, b;
+
+  for(int x = 0; x < width; ++x)
+  {
+    for(int y = 0; y < height; ++y)
+    {
+      pixel = getpixel(surface, x, y);
+      SDL_GetRGB(pixel, surface->format, &r, &g, &b);
+      if (r > 0 && g > 0 && b > 0)
+      {
+        int j = y;
+        pixel_j = getpixel(surface, x, j);
+        while(r > 0 && g > 0 && b > 0 && j < height)
+        {
+          pixel_j = getpixel(surface, x, j);
+          SDL_GetRGB(pixel_j, surface->format, &r, &g, &b);
+          ++j;
+        }
+        r = 0;
+        g = 0;
+        b = 0;
+        pixel = SDL_MapRGB(surface->format, r, g, b);
+        if(j - y < offset /*&& j < height - 1*/)
+        {
+          while(y < j)
+          {
+            putpixel(surface, x, y, pixel);
+            ++y;
+          }
+          putpixel(surface, x, j, pixel);
+        }
+      }
+    }
+  }
+
+  SDL_UnlockSurface(surface);
+  return surface;
+}
+
+
+void merge_bitmap(SDL_Surface *bm1, SDL_Surface *bm2, SDL_Surface *bm3)
+{
+  Uint8 r, g, b, r2, g2, b2;
+  int width = bm1->w;
+  int height = bm1->h;
+  SDL_LockSurface(bm1);
+  SDL_LockSurface(bm2);
+  //SDL_LockSurface(bm3);
+
+  for(int x = 0; x < width; ++x)
+  {
+    for(int y = 0; y < height; ++y)
+    {
+      Uint32 pix1 = getpixel(bm1, x, y);
+      Uint32 pix2 = getpixel(bm2, x, y);
+      SDL_GetRGB(pix1, bm1->format, &r, &g, &b);
+      SDL_GetRGB(pix2, bm2->format, &r2, &g2, &b2);
+      if ((r == 0 && g == 0 && b == 0) && (r2 == 0 && g2 == 0 && b2 == 0))
+      {
+        Uint32 pix3 = getpixel(bm3, x, y);
+        SDL_GetRGB(pix3, bm3->format, &r, &g, &b);
+        r = 0;
+        g = 0;
+        b = 0;
+        pix3 = SDL_MapRGB(bm3->format, r, g, b);
+        putpixel(bm3, x, y, pix3);
+      }
+      else
+      {
+        Uint32 pix3 = getpixel(bm3, x, y);
+        SDL_GetRGB(pix3, bm3->format, &r, &g, &b);
+        r = 255;
+        g = 255;
+        b = 255;
+        pix3 = SDL_MapRGB(bm3->format, r, g, b);
+        putpixel(bm3, x, y, pix3);
+      }
+    }
+  }
+  //SDL_UnlockSurface(bm3);
+  SDL_UnlockSurface(bm2);
+  SDL_UnlockSurface(bm1);
+}
+
+
+void text_detection(char *path)
+{
+
+  SDL_Init(SDL_INIT_EVERYTHING);
+  /*SDL_Surface *screen = SDL_SetVideoMode(640, 490, 32, SDL_SWSURFACE);
+  */
+
+  SDL_Surface *image/*, *image2*/;
+  image = SDL_LoadBMP(path);
+  /*SDL_BlitSurface(image, NULL, screen, NULL);
+  SDL_Flip(screen);*/
+
+  SDL_Surface *bitmap1 = SDL_LoadBMP(path);
+  SDL_Surface *bitmap2 = SDL_LoadBMP(path);
+  SDL_Surface *bitmap3 = bitmap2;
+
+  int offset_x = bitmap1->w - 1;
+  int offset_y = bitmap1->h - 1;
+
+  bitmap1 = Xtraversal(bitmap1, bitmap1->w, bitmap1->h, offset_x);
+  bitmap2 = Ytraversal(bitmap2, bitmap2->w, bitmap2->h, offset_y);
+  //SDL_SaveBMP(bitmap1, "file.bmp");
+  //SDL_SaveBMP(bitmap2, "file.bmp");
+
+  merge_bitmap(bitmap1, bitmap2, bitmap3);
+  SDL_SaveBMP(bitmap3, "file2.bmp");
+
+  /*image2 = SDL_LoadBMP("file.bmp");
+  SDL_BlitSurface(image2, NULL, screen, NULL);
+  SDL_Flip(screen);
+  SDL_Delay(5000);*/
+			
+  //FindText(bitmap3, image);
+  SDL_SaveBMP(image, "file.bmp");
+  //SDL_SaveBMP(bitmap3, "file2.bmp");
+  printf("Saved\n");
+
+  SDL_FreeSurface(image);
+  //SDL_FreeSurface(bitmap1);
+  //SDL_FreeSurface(bitmap2);
+  //SDL_FreeSurface(bitmap3);
+
+  //image = SDL_LoadBMP("file.bmp");
+  /*SDL_BlitSurface(image, NULL, screen, NULL);
+  SDL_Flip(screen);
+  SDL_Delay(5000);*/
+
+  SDL_Quit();
+}
+
